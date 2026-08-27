@@ -2,7 +2,6 @@
 
 SillyTavern Regex 与前端美化方案管理工作台。
 
-- Claude 风格浅色界面
 - 灵感展厅分组 / 标签 / 拖拽 / Gemini HTML 拆分导入
 - 正则模式 / 设计模式
 - 三栏拖拽调整宽度
