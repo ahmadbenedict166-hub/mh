@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>青史墨韵 · Claude 风格 Regex / 设计工作台 v5.7</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&amp;family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,400&amp;family=Noto+Serif+SC:wght@500;700;900&amp;display=swap" rel="stylesheet"/>
+
+
+<link href="./styles.css" rel="stylesheet"/></head>
+<body>
+<aside class="app-sidebar" id="appSidebar">
+<div class="sidebar-brand">
+<div class="logo">R</div>
+<div class="sidebar-brand-text">青史墨韵</div>
+</div>
+<button class="sidebar-collapse" id="sidebarCollapseBtn" title="折叠侧栏">‹</button>
+<nav class="side-nav">
+<button class="active" id="navGallery"><span class="side-nav-icon">展</span><span class="side-nav-label">灵感展厅</span></button>
+<button id="navStudio"><span class="side-nav-icon">工</span><span class="side-nav-label">组合工作台</span></button>
+</nav>
+</aside>
+<main class="main">
+<!-- Gallery Page -->
+<section id="galleryPage">
+<div class="gallery-head">
+<div class="gallery-topline">
+<div><h1>美化方案典藏</h1></div>
+<div class="gallery-tools">
+<input class="input" id="gallerySearch" placeholder="搜索组名 / 方案名 / 标签 / 代码" style="width:min(300px,55vw)"/>
+<button class="btn primary" id="galleryNewBtn">＋ 新建方案</button>
+<button class="btn" id="galleryNewGroupBtn">＋ 新建组</button>
+<button class="btn" id="galleryHtmlImportBtn">导入 Gemini HTML</button>
+<button class="btn" id="galleryImportBtn">导入 Regex JSON</button>
+</div>
+</div>
+<div class="gallery-filter-shell" id="galleryFilterShell">
+<div class="gallery-filter-row" id="galleryFilterRow">
+<button class="filter-chip active" data-gallery-cat="all">全部</button>
+<button class="filter-chip" data-gallery-cat="regex">正则</button>
+<button class="filter-chip" data-gallery-cat="design">设计</button>
+</div>
+<div class="gallery-tag-scroll"><div class="gallery-tag-row" id="galleryTagRow"></div></div>
+<div class="gallery-filter-actions">
+<button class="btn small" id="galleryTagManageBtn">标签</button>
+<button class="btn small" id="galleryFilterToggleBtn">展开</button>
+</div>
+</div>
+</div>
+<div class="gallery-body">
+<div class="gallery-groups-root" id="galleryGroupsRoot"></div>
+</div>
+</section>
+<!-- Studio Page -->
+<section id="studioPage">
+<div class="workspace-bar">
+<div class="studio-mode-switch" id="studioModeSwitch">
+<button class="studio-mode-btn active" data-studio-mode="regex">正则模式</button>
+<button class="studio-mode-btn" data-studio-mode="design">设计模式</button>
+</div>
+<span class="label">已保存:</span>
+<select class="select saved" id="workspaceSelect"><option value="">当前草稿</option></select>
+<span class="label">名称:</span>
+<input class="input name" id="workspaceName" value="未命名工作台"/>
+<button class="btn primary" id="saveWorkspaceBtn">保存工作台</button>
+<button class="btn" id="saveAsWorkspaceBtn">另存为</button>
+<button class="btn" id="newWorkspaceBtn">新建</button>
+<button class="btn danger" id="deleteWorkspaceBtn">删除</button>
+<span class="autosave" id="autosaveText">草稿自动保存</span>
+</div>
+<div class="studio-grid" id="studioGrid">
+<!-- Pane 1: Preview -->
+<section class="pane" id="previewPane">
+<div class="pane-head">
+<div class="pane-title">
+<b>① 综合渲染展示</b>
+</div>
+<div class="pane-actions">
+<button class="btn small" id="refreshPreviewBtn">刷新</button>
+</div>
+</div>
+<div class="preview-trace-tabs" id="previewTraceTabs">
+<button class="preview-trace-tab active" data-preview-step="final">最终渲染</button>
+<button class="preview-trace-tab" data-preview-step="original">原始</button>
+</div>
+<div class="preview-body">
+<iframe id="previewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+</div>
+<div class="preview-status">
+<span id="previewStatus">等待输入</span>
+<span id="previewStats">0 字符</span>
+</div>
+</section>
+<div class="splitter" id="splitter1" title="拖动调节宽度"></div>
+<!-- Pane 2: Text Context -->
+<section class="pane" id="textPane">
+<div class="pane-head">
+<div class="pane-title">
+<b id="textPaneTitle">② 完整文本</b>
+</div>
+<div class="pane-actions">
+<button class="btn small" id="fillSamplesBtn">填入示例</button>
+<button class="btn small" id="clearTextBtn">清空</button>
+</div>
+</div>
+<div class="mode-view" id="regexTextView">
+<div class="context-strip">
+<div class="field-mini">
+<label>影响范围 / Placement</label>
+<select class="select" id="placementSelect">
+<option value="2">AI 响应 · 2</option>
+<option value="1">用户输入 · 1</option>
+<option value="3">斜杠命令 · 3</option>
+<option value="5">世界信息 · 5</option>
+<option value="6">推理 · 6</option>
+</select>
+</div>
+<div class="field-mini">
+<label>观察通道</label>
+<select class="select" id="channelSelect">
+<option value="display">最终显示（源文本 + Display Only）</option>
+<option value="stored">存储文本 / 普通阶段</option>
+<option value="prompt">发给 AI（源文本 + Prompt Only）</option>
+</select>
+</div>
+<div class="field-mini">
+<label>消息深度（0 = 最新）</label>
+<input class="input" id="depthInput" min="-1" type="number" value="0"/>
+</div>
+<div class="field-mini">
+<label>宏模拟</label>
+<div style="display:flex;gap:4px">
+<input class="input" id="userMacro" style="width:50%" title="{{user}}" value="User"/>
+<input class="input" id="charMacro" style="width:50%" title="{{char}}" value="Character"/>
+</div>
+</div>
+<div class="check-line">
+<label><input id="editCheck" type="checkbox"/> 模拟“编辑消息”</label>
+<label><input checked="" id="stripFenceCheck" type="checkbox"/> 按 ```html 结构渲染（含 &lt;body&gt; 时视为完整页面）</label>
+</div>
+</div>
+<div class="text-editor-wrap">
+<textarea class="textarea" data-code-mode="mixed" id="fullText" placeholder="把完整 AI 回复粘贴在这里。多个正则会按右侧执行列表从上到下处理。" spellcheck="false"></textarea>
+<div class="text-foot">
+<span id="inputStats">0 字符</span>
+<span>修改后实时重新执行</span>
+</div>
+</div>
+</div>
+<div class="mode-view hidden" id="designTextView">
+<div class="design-code-tabs">
+<button class="design-code-tab active" data-design-code-tab="html">HTML</button>
+<button class="design-code-tab" data-design-code-tab="css">CSS</button>
+<button class="design-code-tab" data-design-code-tab="js">JS</button>
+</div>
+<div class="design-code-editor active" data-design-code-panel="html">
+<textarea class="textarea" data-code-mode="html" id="designExtraHtml" spellcheck="false"></textarea>
+</div>
+<div class="design-code-editor" data-design-code-panel="css">
+<textarea class="textarea" data-code-mode="css" id="designExtraCss" spellcheck="false"></textarea>
+</div>
+<div class="design-code-editor" data-design-code-panel="js">
+<textarea class="textarea" data-code-mode="js" id="designExtraJs" spellcheck="false"></textarea>
+</div>
+</div>
+</section>
+<div class="splitter" id="splitter2" title="拖动调节宽度"></div>
+<!-- Pane 3: Regex Manager -->
+<section class="pane" id="regexPane">
+<div class="pane-head">
+<div class="pane-title">
+<b id="managerPaneTitle">③ 正则 / 正则组</b>
+<span class="badge" id="pipelineSummary">0 条</span>
+</div>
+<div class="pane-actions" id="regexPaneActions">
+<button class="btn small primary" id="quickAddRegexBtn">＋正则</button>
+<button class="btn small" id="quickAddGroupBtn">＋正则组</button>
+</div>
+<div class="pane-actions hidden" id="designPaneActions">
+<button class="btn small primary" id="quickAddDesignBtn">＋设计</button>
+</div>
+</div>
+<div class="mode-view" id="regexManagerView">
+<div class="manager-tabs">
+<button class="manager-tab active" data-tab="pipeline">执行列表</button>
+<button class="manager-tab" data-tab="library">正则库</button>
+<button class="manager-tab" data-tab="groups">正则组</button>
+</div>
+<div class="tab-panel active" id="tabPipeline">
+<div class="tab-toolbar">
+<span class="badge" id="pipelineCount">0 条</span>
+<button class="btn small" id="exportPipelineRegexBtn" title="导出为 SillyTavern 可直接批量导入的 Regex JSON 数组">导出至酒馆</button>
+<button class="btn small danger" id="clearPipelineBtn">清空</button>
+</div>
+<div class="scroll" id="pipelineList"></div>
+</div>
+<div class="tab-panel" id="tabLibrary">
+<div class="tab-toolbar">
+<input class="input" id="librarySearch" placeholder="搜索正则"/>
+<select class="select" id="libraryPlacementFilter" style="width:95px">
+<option value="all">全部范围</option>
+<option value="2">AI响应</option>
+<option value="1">用户输入</option>
+<option value="3">斜杠</option>
+<option value="5">世界信息</option>
+<option value="6">推理</option>
+</select>
+<button class="btn small primary" id="newRegexBtn">新建</button>
+<button class="btn small" id="importRegexBtn">导入</button>
+<button class="btn small" id="exportLibraryBtn">库备份</button>
+</div>
+<div class="scroll" id="libraryList"></div>
+</div>
+<div class="tab-panel" id="tabGroups">
+<div class="tab-toolbar">
+<input class="input" id="groupSearch" placeholder="搜索正则组"/>
+<button class="btn small primary" id="newGroupBtn">新建组</button>
+<button class="btn small" id="importGroupBtn">导入组</button>
+</div>
+<div class="scroll" id="groupList"></div>
+</div> </div>
+<div class="mode-view hidden" id="designManagerView">
+<div class="design-manager-tabs">
+<button class="design-manager-tab active" data-design-tab="pipeline">组合列表</button>
+<button class="design-manager-tab" data-design-tab="library">设计库</button>
+</div>
+<div class="design-panel active" id="designTabPipeline">
+<div class="tab-toolbar">
+<span class="badge" id="designPipelineCount">0 条</span>
+<button class="btn small danger" id="clearDesignPipelineBtn">清空</button>
+</div>
+<div class="scroll" id="designPipelineList"></div>
+</div>
+<div class="design-panel" id="designTabLibrary">
+<div class="tab-toolbar"><input class="input" id="designLibrarySearch" placeholder="搜索设计"/></div>
+<div class="scroll" id="designLibraryList"></div>
+</div>
+</div>
+</section>
+</div>
+</section>
+</main>
+<!-- Gallery Group Editor Modal -->
+<div class="modal-backdrop" id="galleryGroupEditorBackdrop">
+<div class="modal small">
+<div class="modal-head">
+<b id="galleryGroupEditorTitle">编辑方案组</b>
+<button class="btn small ghost" data-close="galleryGroupEditorBackdrop">✕</button>
+</div>
+<div class="modal-body">
+<div class="form-field"><label>组名称</label><input class="input" id="galleryGroupNameInput"/></div>
+<div class="form-field" style="margin-top:10px"><label>组标签（逗号 / 顿号分隔）</label><input class="input" id="galleryGroupTagsInput" placeholder="古风, 面板, Gemini"/></div>
+<div class="form-field" style="margin-top:10px"><label>说明</label><textarea class="textarea" id="galleryGroupDescInput" style="min-height:90px;resize:vertical"></textarea></div>
+<div class="helper">组可以拖拽排序；卡片可拖入其他组。删除组时只移除分组容器，组内卡片会移动到“未分组”。</div>
+</div>
+<div class="modal-foot"><button class="btn" data-close="galleryGroupEditorBackdrop">取消</button><button class="btn primary" id="saveGalleryGroupBtn">保存方案组</button></div>
+</div>
+</div>
+<!-- Gallery Item Editor Modal -->
+<div class="modal-backdrop" id="galleryItemEditorBackdrop">
+<div class="modal">
+<div class="modal-head">
+<b id="galleryItemEditorTitle">编辑方案</b>
+<button class="btn small ghost" data-close="galleryItemEditorBackdrop">✕</button>
+</div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-field"><label>展示名称</label><input class="input" id="galleryItemTitleInput"/></div>
+<div class="form-field"><label>所属组</label><select class="select" id="galleryItemGroupSelect"></select></div>
+<div class="form-field full"><label>标签（逗号 / 顿号分隔）</label><input class="input" id="galleryItemTagsInput" placeholder="卡片, 古风, 方案03"/></div>
+<div class="form-field full"><label>说明</label><textarea class="textarea" id="galleryItemDescInput" style="min-height:72px;resize:vertical"></textarea></div>
+<div class="form-field full"><label>来源</label><input class="input" id="galleryItemSourceInput" readonly=""/></div>
+</div>
+<div class="gallery-code-grid" id="galleryDesignCodeArea">
+<div class="form-field"><label>方案 HTML</label><textarea class="textarea" data-code-mode="html" id="galleryItemHtmlInput" spellcheck="false"></textarea></div>
+<div class="form-field"><label>方案 CSS（允许包含原展示页公共样式）</label><textarea class="textarea" data-code-mode="css" id="galleryItemCssInput" spellcheck="false"></textarea></div>
+<div class="form-field"><label>方案 JS（如无交互可为空）</label><textarea class="textarea" data-code-mode="js" id="galleryItemJsInput" spellcheck="false"></textarea></div>
+</div>
+<div class="helper hidden" id="galleryRegexItemTip">这是正则组件的展厅信息。Find / Replace 请使用卡片上的“编辑正则”；这里仅管理分组、标签、说明和展示名称。</div>
+</div>
+<div class="modal-foot"><button class="btn" data-close="galleryItemEditorBackdrop">取消</button><button class="btn primary" id="saveGalleryItemBtn">保存方案</button></div>
+</div>
+</div>
+<!-- Gemini HTML Split Import Modal -->
+<div class="modal-backdrop" id="htmlImportBackdrop">
+<div class="modal">
+<div class="modal-head">
+<b>Gemini HTML · 拆分导入</b>
+<button class="btn small ghost" data-close="htmlImportBackdrop">✕</button>
+</div>
+<div class="modal-body">
+<div class="gallery-import-summary" id="htmlImportSummary">等待解析</div>
+<div class="form-grid" style="margin-bottom:12px">
+<div class="form-field"><label>导入为方案组</label><input class="input" id="htmlImportGroupName"/></div>
+<div class="form-field"><label>组标签</label><input class="input" id="htmlImportGroupTags" value="Gemini导入"/></div>
+</div>
+<div class="tab-toolbar" style="padding:0 0 8px;border:0;background:transparent"><button class="btn small" id="htmlImportSelectAllBtn">全选</button><button class="btn small" id="htmlImportSelectNoneBtn">全不选</button><span class="badge" id="htmlImportSelectedCount">0 条</span></div>
+<div class="html-import-list" id="htmlImportList"></div>
+</div>
+<div class="modal-foot"><button class="btn" data-close="htmlImportBackdrop">取消</button><button class="btn primary" id="confirmHtmlImportBtn">导入选中方案</button></div>
+</div>
+</div>
+<input accept="text/html,.html,.htm" class="hidden" id="galleryHtmlFileInput" multiple="" type="file"/>
+<!-- Regex Editor Modal -->
+<div class="modal-backdrop" id="regexEditorBackdrop">
+<div class="modal">
+<div class="modal-head">
+<b id="regexEditorTitle">编辑正则</b>
+<button class="btn small ghost" data-close="regexEditorBackdrop">✕</button>
+</div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-field">
+<label>名称 / Script Name</label>
+<input class="input" id="reName"/>
+</div>
+<div class="form-field">
+<label>分类（仅工作台元数据）</label>
+<select class="select" id="reCategory">
+<option value="custom">自定义</option>
+<option value="history">史料古籍</option>
+<option value="diary">私密手记</option>
+<option value="stat">状态面板</option>
+<option value="lit">文学排版</option>
+</select>
+</div>
+<div class="form-field full">
+<label>查找正则 / Find Regex（推荐 /pattern/flags；flags 不再固定为 gims）</label>
+<textarea class="textarea code-find-area" data-code-mode="regex" id="reFind" placeholder="/&lt;Tag&gt;([\\s\\S]*?)&lt;\\/Tag&gt;/g" spellcheck="false"></textarea>
+</div>
+<div class="form-field full">
+<label>替换为 / Replace With（支持 {{match}}、$1、$&lt;name&gt;）</label>
+<textarea class="textarea replace-area" data-code-mode="html" id="reReplace" spellcheck="false"></textarea>
+</div>
+<div class="form-field full">
+<label>修剪 / Trim Out（每行一个字符串）</label>
+<textarea class="textarea" id="reTrim" style="min-height:65px"></textarea>
+</div>
+<div class="form-field">
+<div class="option-box">
+<div class="option-title">影响范围 / Affects</div>
+<div class="checkbox-grid">
+<label><input name="rePlacement" type="checkbox" value="1"/>用户输入 (1)</label>
+<label><input name="rePlacement" type="checkbox" value="2"/>AI 响应 (2)</label>
+<label><input name="rePlacement" type="checkbox" value="3"/>斜杠命令 (3)</label>
+<label><input name="rePlacement" type="checkbox" value="5"/>世界信息 (5)</label>
+<label><input name="rePlacement" type="checkbox" value="6"/>推理 (6)</label>
+</div>
+</div>
+</div>
+<div class="form-field">
+<div class="option-box">
+<div class="option-title">其他选项 / Ephemerality</div>
+<div class="checkbox-grid">
+<label><input id="reDisabled" type="checkbox"/>Disabled</label>
+<label><input id="reRunEdit" type="checkbox"/>Run on Edit</label>
+<label><input id="reMarkdownOnly" type="checkbox"/>仅显示 (markdownOnly)</label>
+<label><input id="rePromptOnly" type="checkbox"/>仅提示词 (promptOnly)</label>
+</div>
+</div>
+</div>
+<div class="form-field">
+<label>Find Regex 中的宏</label>
+<select class="select" id="reSubstitute">
+<option value="0">不替换 / None</option>
+<option value="1">原始 / Raw</option>
+<option value="2">转义 / Escaped</option>
+</select>
+</div>
+<div class="form-field">
+<label>深度范围</label>
+<div style="display:flex;gap:6px">
+<input class="input" id="reMinDepth" placeholder="Min / unlimited" type="number"/>
+<input class="input" id="reMaxDepth" placeholder="Max / unlimited" type="number"/>
+</div>
+</div>
+<div class="form-field">
+<label>标签（工作台检索用）</label>
+<input class="input" id="reTag"/>
+</div>
+<div class="form-field">
+<label>示例文本（可用于一键拼接测试）</label>
+<textarea class="textarea" id="reSample" style="min-height:65px"></textarea>
+</div>
+</div>
+</div>
+<div class="modal-foot">
+<button class="btn" data-close="regexEditorBackdrop">取消</button>
+<button class="btn primary" id="saveRegexEditorBtn">保存</button>
+</div>
+</div>
+</div>
+<!-- Chooser Modal -->
+<div class="modal-backdrop" id="chooserBackdrop">
+<div class="modal small">
+<div class="modal-head">
+<b id="chooserTitle">添加</b>
+<button class="btn small ghost" data-close="chooserBackdrop">✕</button>
+</div>
+<div class="modal-body">
+<div class="chooser-search">
+<input class="input" id="chooserSearch" placeholder="搜索名称 / 标签 / 正则"/>
+</div>
+<div class="chooser-list" id="chooserList"></div>
+</div>
+</div>
+</div>
+<!-- Group Editor Modal -->
+<div class="modal-backdrop" id="groupEditorBackdrop">
+<div class="modal group-editor-modal">
+<div class="modal-head">
+<b id="groupEditorTitle">编辑正则组</b>
+<button class="btn small ghost" data-close="groupEditorBackdrop">✕</button>
+</div>
+<div class="modal-body group-editor-body">
+<div class="group-editor-meta">
+<div class="form-field">
+<label>组名称</label>
+<input class="input" id="groupNameInput"/>
+</div>
+<div class="form-field">
+<label>说明</label>
+<input class="input" id="groupDescInput"/>
+</div>
+</div>
+<div class="group-editor-columns">
+<section class="group-editor-panel">
+<div class="group-editor-panel-head">
+<div class="group-editor-panel-title">
+<b>组内执行顺序</b>
+<small id="groupMemberCount">0 条 · 从上到下执行</small>
+</div>
+<div class="group-editor-panel-tools">
+<button class="btn small" id="groupImportMemberBtn">导入 JSON 到本组</button>
+<button class="btn small danger" id="groupClearMembersBtn">清空</button>
+</div>
+</div>
+<div class="group-editor-scroll group-editor-list" id="groupMemberList"></div>
+<div class="group-import-note">可拖动成员调整顺序；导入 JSON 只会把正则加入当前组和正则库，不会额外新建另一个正则组。</div>
+</section>
+<section class="group-editor-panel">
+<div class="group-editor-panel-head">
+<div class="group-editor-panel-title">
+<b>从正则库添加</b>
+<small>点击“加入”立即放到当前组末尾</small>
+</div>
+</div>
+<div class="group-editor-search">
+<input class="input" id="groupMemberSearch" placeholder="搜索名称 / 标签 / Find Regex"/>
+</div>
+<div class="group-editor-scroll" id="groupAvailableList"></div>
+</section>
+</div>
+</div>
+<div class="modal-foot">
+<button class="btn" data-close="groupEditorBackdrop">取消</button>
+<button class="btn primary" id="saveGroupBtn">保存正则组</button>
+</div>
+</div>
+</div>
+<!-- Custom Confirm Modal -->
+<div class="modal-backdrop" id="confirmBackdrop">
+<div aria-labelledby="confirmTitle" aria-modal="true" class="modal small confirm-modal" id="confirmModal" role="dialog">
+<div class="modal-head"><b id="confirmTitle">请确认</b><button class="btn small ghost" id="confirmCloseBtn" type="button">✕</button></div>
+<div class="modal-body">
+<div class="confirm-content">
+<div class="confirm-icon" id="confirmIcon">?</div>
+<div class="confirm-copy"><b id="confirmMessage">确认执行此操作？</b><p id="confirmDescription"></p><div class="confirm-detail hidden" id="confirmDetail"></div></div>
+</div>
+</div>
+<div class="modal-foot"><button class="btn" id="confirmCancelBtn" type="button">取消</button><button class="btn primary" id="confirmOkBtn" type="button">确认</button></div>
+</div>
+</div>
+<!-- Tag Manager Modal -->
+<div class="modal-backdrop" id="tagManagerBackdrop">
+<div class="modal small">
+<div class="modal-head"><b>标签管理</b><button class="btn small ghost" data-close="tagManagerBackdrop">✕</button></div>
+<div class="modal-body">
+<div class="tag-manager-add"><input class="input" id="tagManagerInput" placeholder="新标签"/><button class="btn primary" id="tagManagerAddBtn">增加</button></div>
+<div class="tag-manager-list" id="tagManagerList"></div>
+</div>
+</div>
+</div>
+<input accept="application/json,.json" class="hidden" id="regexFileInput" multiple="" type="file"/>
+<input accept="application/json,.json" class="hidden" id="groupFileInput" multiple="" type="file"/>
+<input accept="application/json,.json" class="hidden" id="groupMemberFileInput" multiple="" type="file"/>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="./app.js"></script></body>
+</html>
